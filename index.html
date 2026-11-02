@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#050b18">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="JARVIS">
+  <meta name="description" content="Assistant personnel JARVIS">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="apple-touch-icon" href="./icons/jarvis-192.png">
+  <link rel="stylesheet" href="./style.css">
+  <title>J.A.R.V.I.S.</title>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark">J</span><div><div class="brand-name">J.A.R.V.I.S.</div><div class="brand-sub">PERSONAL INTELLIGENCE SYSTEM</div></div></div>
+      <div class="status"><span class="status-dot"></span><span id="connection">SYSTÈME LOCAL</span></div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="eyebrow">ASSISTANT PERSONNEL</div>
+        <div class="reactor-wrap" id="reactorWrap">
+          <div class="orbit orbit-a"></div><div class="orbit orbit-b"></div>
+          <div class="reactor"><div class="reactor-core"></div></div>
+          <div class="reactor-label" id="reactorLabel">EN ATTENTE</div>
+        </div>
+        <h1>Bonjour, Monsieur.</h1>
+        <p class="subtitle" id="subtitle">Tous les systèmes sont prêts.</p>
+      </section>
+
+      <section class="controls">
+        <button class="voice-button" id="voiceButton" aria-label="Lire la dernière réponse"><span>▶</span> ÉCOUTER JARVIS</button>
+        <div class="model-row">
+          <label for="modelSelect">MOTEUR INTELLIGENT</label>
+          <select id="modelSelect">
+            <option value="auto">Automatique</option>
+            <option value="fast">Rapide</option>
+            <option value="advanced">Avancé</option>
+            <option value="local">Local / démonstration</option>
+          </select>
+        </div>
+      </section>
+
+      <section class="chat-panel">
+        <div class="section-heading"><span>CONVERSATION</span><button id="clearButton" class="text-button">EFFACER</button></div>
+        <div id="messages" class="messages" aria-live="polite">
+          <article class="message jarvis"><div class="message-tag">JARVIS</div><p>Je suis opérationnel, Monsieur. Comment puis-je vous assister ?</p></article>
+        </div>
+        <form id="chatForm" class="composer">
+          <textarea id="userInput" rows="1" placeholder="Écrivez votre demande, Monsieur…" aria-label="Votre message"></textarea>
+          <button type="submit" class="send-button" aria-label="Envoyer">➤</button>
+        </form>
+        <div class="composer-hint">Astuce : utilisez le micro du clavier iPhone pour dicter votre demande.</div>
+      </section>
+
+      <footer><span>J.A.R.V.I.S. <b>v0.1</b></span><span>PROTOTYPE PERSONNEL</span></footer>
+    </main>
+  </div>
+  <script src="./app.js"></script>
+</body>
+</html>
