@@ -424,7 +424,7 @@ async function createChallenge(verifier) {
 }
 
 async function connectSpotify() {
-  try {
+  try {alert("JARVIS détecte le clic Spotify");
     const verifier = randomString();
     const state = randomString(32);
     const challenge = await createChallenge(verifier);
