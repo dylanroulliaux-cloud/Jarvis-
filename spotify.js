@@ -114,9 +114,8 @@ async function exchangeCode(code) {
   localStorage.removeItem(VERIFIER_KEY);
   localStorage.removeItem(STATE_KEY);
 
-  window.history.replaceState({}, document.title, window.location.pathname);
   setSpotifyStatus("Spotify connecté avec succès !");
-}
+window.location.replace(SPOTIFY_REDIRECT_URI);
 
 async function refreshSpotifyToken(tokens) {
   if (!tokens.refresh_token) {
