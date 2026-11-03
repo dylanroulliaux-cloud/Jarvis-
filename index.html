@@ -44,7 +44,34 @@
           </select>
         </div>
       </section>
+      <section class="media-panel">
+        <div class="section-heading">
+          <span>MULTIMÉDIA</span>
+          <span id="mediaStatus">SYSTÈME EN ATTENTE</span>
+        </div>
 
+        <div class="media-card">
+          <h2>SPOTIFY</h2>
+          <p id="spotifyStatus">Spotify non connecté</p>
+          <button id="spotifyConnect">CONNECTER SPOTIFY</button>
+          <div class="media-buttons">
+            <button id="spotifyPrevious">⏮</button>
+            <button id="spotifyPlayPause">▶ / ⏸</button>
+            <button id="spotifyNext">⏭</button>
+          </div>
+        </div>
+
+        <div class="media-card">
+          <h2>YOUTUBE</h2>
+          <form id="youtubeForm">
+            <input id="youtubeSearch" type="text"
+              placeholder="Rechercher une vidéo…">
+            <button type="submit">RECHERCHER</button>
+          </form>
+          <div id="youtubeResults"></div>
+          <div id="youtubePlayer"></div>
+        </div>
+      </section>
       <section class="chat-panel">
         <div class="section-heading"><span>CONVERSATION</span><button id="clearButton" class="text-button">EFFACER</button></div>
         <div id="messages" class="messages" aria-live="polite">
