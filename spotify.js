@@ -1,12 +1,12 @@
 
 /* ==========================================
    J.A.R.V.I.S. — SPOTIFY PREMIUM PLAYER
-   Version 2.0
+   VERSION 3.0
    ========================================== */
 
 const SPOTIFY_CLIENT_ID = "b583b5914b3644faa2cc977d3fa20861";
 const SPOTIFY_REDIRECT_URI =
-  "https://dylanroulliaux-cloud.github.io/Jarvis-/";
+  "https://dylanrouilliaux-cloud.github.io/Jarvis-/";
 
 const SPOTIFY_SCOPES = [
   "user-read-playback-state",
@@ -29,6 +29,7 @@ const nextButton = $("spotifyNext");
 let currentPlayer = null;
 let refreshInterval = null;
 let isSeeking = false;
+let seekTimer = null;
 
 /* ==========================================
    STYLE DU LECTEUR
@@ -41,18 +42,38 @@ function installPlayerStyle() {
   style.id = "jarvisSpotifyStyle";
 
   style.textContent = `
+    /* Masquer les anciens boutons en doublon */
+    .media-card .media-buttons {
+      display: none !important;
+    }
+
     .jarvis-player {
-      margin-top: 20px;
+      margin-top: 18px;
       padding: 16px;
-      border: 1px solid rgba(72,190,255,.24);
-      border-radius: 16px;
-      background: linear-gradient(
-        145deg,
-        rgba(13,35,57,.96),
-        rgba(4,13,25,.98)
-      );
-      box-shadow: 0 0 24px rgba(0,145,255,.08);
+      border: 1px solid rgba(72,190,255,.28);
+      border-radius: 15px;
+      background: linear-gradient(145deg,#102b46,#071426);
+      box-shadow: 0 0 24px rgba(0,145,255,.10);
       color: #eaf7ff;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .jarvis-player:before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 12%;
+      width: 76%;
+      height: 1px;
+      background: linear-gradient(90deg,transparent,#55d9ff,transparent);
+    }
+
+    .jarvis-player-label {
+      color: #51caff;
+      font: 9px Orbitron, sans-serif;
+      letter-spacing: 2px;
+      margin-bottom: 16px;
     }
 
     .jarvis-player-top {
@@ -62,13 +83,13 @@ function installPlayerStyle() {
     }
 
     .jarvis-cover {
-      width: 104px;
-      height: 104px;
+      width: 108px;
+      height: 108px;
       flex-shrink: 0;
-      border-radius: 12px;
+      border-radius: 11px;
       object-fit: cover;
       background: #10283c;
-      box-shadow: 0 0 18px rgba(0,160,255,.15);
+      box-shadow: 0 0 20px rgba(0,160,255,.20);
     }
 
     .jarvis-track-info {
@@ -77,36 +98,32 @@ function installPlayerStyle() {
     }
 
     .jarvis-track-title {
-      font-size: 16px;
-      font-weight: 700;
-      margin-bottom: 7px;
+      font: 600 14px Orbitron, sans-serif;
+      line-height: 1.5;
+      color: #effaff;
       overflow-wrap: anywhere;
     }
 
     .jarvis-track-artist {
-      color: #9bbbd2;
-      font-size: 13px;
+      color: #a3c4dc;
+      font-size: 12px;
+      margin-top: 8px;
       overflow-wrap: anywhere;
     }
 
     .jarvis-track-album {
-      color: #668ba8;
-      font-size: 11px;
-      margin-top: 7px;
-    }
-
-    .jarvis-player-label {
-      color: #51caff;
+      color: #6f9dbb;
       font-size: 10px;
-      letter-spacing: 2px;
-      margin-bottom: 10px;
+      margin-top: 8px;
+      overflow-wrap: anywhere;
     }
 
     .jarvis-progress {
       margin-top: 19px;
     }
 
-    .jarvis-progress input {
+    .jarvis-progress input,
+    .jarvis-volume input {
       width: 100%;
       accent-color: #42caff;
       cursor: pointer;
@@ -116,7 +133,7 @@ function installPlayerStyle() {
       display: flex;
       justify-content: space-between;
       color: #8caec7;
-      font-size: 11px;
+      font-size: 10px;
       margin-top: 4px;
       font-variant-numeric: tabular-nums;
     }
@@ -125,59 +142,60 @@ function installPlayerStyle() {
       display: flex;
       justify-content: center;
       align-items: center;
-      gap: 23px;
-      margin-top: 17px;
+      gap: 24px;
+      margin-top: 16px;
     }
 
     .jarvis-controls button {
       border: 0;
       background: transparent;
       color: #d9f2ff;
-      font-size: 25px;
+      font-size: 24px;
       cursor: pointer;
-      padding: 6px;
+      padding: 7px;
+      min-width: 42px;
+      min-height: 42px;
     }
 
     .jarvis-controls .jarvis-main-control {
-      width: 49px;
-      height: 49px;
+      width: 52px;
+      height: 52px;
       border-radius: 50%;
       background: linear-gradient(135deg,#65d8ff,#148de0);
       color: #031322;
-      font-size: 22px;
+      font-size: 21px;
       box-shadow: 0 0 18px rgba(55,190,255,.3);
+    }
+
+    .jarvis-controls button:active {
+      transform: scale(.94);
     }
 
     .jarvis-volume {
       display: flex;
       align-items: center;
       gap: 10px;
-      margin-top: 17px;
+      margin-top: 16px;
       color: #9bbbd2;
-      font-size: 13px;
+      font-size: 10px;
+      letter-spacing: 1px;
     }
 
     .jarvis-volume input {
       flex: 1;
-      accent-color: #42caff;
+      min-width: 0;
     }
 
     .jarvis-device {
       color: #6f9dbb;
       text-align: center;
-      font-size: 10px;
+      font: 8px Orbitron, sans-serif;
       letter-spacing: 1px;
       margin-top: 15px;
     }
 
-    .jarvis-no-track {
-      text-align: center;
-      padding: 22px 5px;
-      color: #91b1c9;
-      font-size: 13px;
-    }
-
-    .jarvis-player button:disabled {
+    .jarvis-player button:disabled,
+    .jarvis-player input:disabled {
       opacity: .4;
       cursor: default;
     }
@@ -187,8 +205,13 @@ function installPlayerStyle() {
         width: 85px;
         height: 85px;
       }
+
       .jarvis-track-title {
-        font-size: 14px;
+        font-size: 12px;
+      }
+
+      .jarvis-player {
+        padding: 13px;
       }
     }
   `;
@@ -221,7 +244,7 @@ function createPlayer() {
         id="jarvisCover"
         class="jarvis-cover"
         alt="Pochette de l'album"
-        src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect width='100%25' height='100%25' fill='%230d263c'/%3E%3Ctext x='50%25' y='54%25' font-size='55' text-anchor='middle' fill='%2342caff'%3E♫%3C/text%3E%3C/svg%3E"
+        src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect width='100%25' height='100%25' fill='%230d263c'/%3E%3Ctext x='50%25' y='58%25' font-size='75' text-anchor='middle' fill='%2342caff'%3E%E2%99%AB%3C/text%3E%3C/svg%3E"
       >
 
       <div class="jarvis-track-info">
@@ -246,6 +269,7 @@ function createPlayer() {
         min="0"
         max="1000"
         value="0"
+        disabled
         aria-label="Progression du morceau"
       >
 
@@ -257,11 +281,13 @@ function createPlayer() {
 
     <div class="jarvis-controls">
       <button id="jarvisPrevious" aria-label="Précédent">⏮</button>
+
       <button
         id="jarvisPlay"
         class="jarvis-main-control"
         aria-label="Lecture ou pause"
       >▶</button>
+
       <button id="jarvisNext" aria-label="Suivant">⏭</button>
     </div>
 
@@ -291,23 +317,33 @@ function createPlayer() {
     card.appendChild(player);
   }
 
-  $("jarvisPrevious").addEventListener(
-    "click",
-    () => spotifyCommand("previous")
-  );
+  $("jarvisPrevious").addEventListener("click", () => {
+    spotifyCommand("previous");
+  });
 
-  $("jarvisNext").addEventListener(
-    "click",
-    () => spotifyCommand("next")
-  );
+  $("jarvisNext").addEventListener("click", () => {
+    spotifyCommand("next");
+  });
 
-  $("jarvisPlay").addEventListener(
-    "click",
-    spotifyTogglePlayback
-  );
+  $("jarvisPlay").addEventListener("click", spotifyTogglePlayback);
+
+  $("jarvisSeek").addEventListener("input", event => {
+    isSeeking = true;
+
+    if (currentPlayer?.item?.duration_ms) {
+      const position =
+        Number(event.target.value) / 1000 *
+        currentPlayer.item.duration_ms;
+
+      $("jarvisElapsed").textContent = formatTime(position);
+    }
+  });
 
   $("jarvisSeek").addEventListener("change", async event => {
-    if (!currentPlayer?.item) return;
+    if (!currentPlayer?.item) {
+      isSeeking = false;
+      return;
+    }
 
     const position = Math.round(
       Number(event.target.value) / 1000 *
@@ -319,15 +355,21 @@ function createPlayer() {
         "/me/player/seek?position_ms=" + position,
         "PUT"
       );
-      await updateSpotifyPlayer();
     } catch (error) {
       setStatus(error.message);
+    } finally {
+      isSeeking = false;
+      updateSpotifyPlayer();
     }
+  });
+
+  $("jarvisVolume").addEventListener("input", event => {
+    $("jarvisVolumeValue").textContent =
+      event.target.value + "%";
   });
 
   $("jarvisVolume").addEventListener("change", async event => {
     const volume = Number(event.target.value);
-    $("jarvisVolumeValue").textContent = volume + "%";
 
     try {
       await spotifyApi(
@@ -463,8 +505,6 @@ async function exchangeCode(code) {
   localStorage.removeItem(VERIFIER_KEY);
   localStorage.removeItem(STATE_KEY);
 
-  setStatus("Spotify connecté avec succès !");
-
   // Retour à l'adresse propre de JARVIS.
   window.location.replace(SPOTIFY_REDIRECT_URI);
 }
@@ -562,7 +602,9 @@ async function spotifyCommand(action) {
   try {
     await spotifyApi("/me/player/" + action, "POST");
     setStatus("Commande Spotify envoyée.");
+
     setTimeout(updateSpotifyPlayer, 800);
+
   } catch (error) {
     setStatus(error.message);
   }
@@ -590,7 +632,7 @@ async function spotifyTogglePlayback() {
 }
 
 /* ==========================================
-   LECTEUR : AFFICHAGE DU MORCEAU
+   AFFICHAGE DU MORCEAU
    ========================================== */
 
 function formatTime(milliseconds) {
@@ -606,12 +648,22 @@ function displayTrack(player) {
 
   if (!item) {
     $("jarvisTrackTitle").textContent = "Aucun morceau en cours";
-    $("jarvisTrackArtist").textContent = "Lancez une musique sur Spotify";
+    $("jarvisTrackArtist").textContent =
+      "Lancez une musique sur Spotify";
     $("jarvisTrackAlbum").textContent = "SPOTIFY PREMIUM";
+    $("jarvisCover").removeAttribute("src");
+
+    $("jarvisElapsed").textContent = "0:00";
+    $("jarvisDuration").textContent = "0:00";
+    $("jarvisSeek").value = 0;
+    $("jarvisSeek").disabled = true;
+
+    currentPlayer = player;
     return;
   }
 
-  $("jarvisTrackTitle").textContent = item.name || "Titre inconnu";
+  $("jarvisTrackTitle").textContent =
+    item.name || "Titre inconnu";
 
   $("jarvisTrackArtist").textContent =
     item.artists?.map(artist => artist.name).join(", ") ||
@@ -623,9 +675,13 @@ function displayTrack(player) {
   const images = item.album?.images || [];
 
   if (images.length) {
-    $("jarvisCover").src =
-      images.find(image => image.width <= 300)?.url ||
-      images[images.length - 1].url;
+    const cover =
+      images.find(image => image.width <= 300) ||
+      images[images.length - 1];
+
+    if (cover?.url) {
+      $("jarvisCover").src = cover.url;
+    }
   }
 
   const duration = item.duration_ms || 0;
@@ -649,10 +705,11 @@ function displayTrack(player) {
     player.device?.name
       ? "APPAREIL ACTIF · " + player.device.name
       : "SPOTIFY PREMIUM";
-  
+
   if (player.device?.volume_percent !== null &&
       player.device?.volume_percent !== undefined) {
     $("jarvisVolume").value = player.device.volume_percent;
+
     $("jarvisVolumeValue").textContent =
       player.device.volume_percent + "%";
   }
@@ -661,7 +718,7 @@ function displayTrack(player) {
 }
 
 /* ==========================================
-   ACTUALISATION AUTOMATIQUE
+   SYNCHRONISATION AUTOMATIQUE
    ========================================== */
 
 async function updateSpotifyPlayer() {
@@ -689,12 +746,14 @@ async function updateSpotifyPlayer() {
 }
 
 function startPlayerUpdates() {
-  if (refreshInterval) clearInterval(refreshInterval);
+  if (refreshInterval) {
+    clearInterval(refreshInterval);
+  }
 
   updateSpotifyPlayer();
 
   refreshInterval = setInterval(() => {
-    if (!document.hidden) {
+    if (!document.hidden && !isSeeking) {
       updateSpotifyPlayer();
     }
   }, 5000);
@@ -711,23 +770,17 @@ async function initializeSpotify() {
     connectButton.addEventListener("click", connectSpotify);
   }
 
-  // Commandes déjà présentes dans ton HTML.
-  previousButton?.addEventListener(
-    "click",
-    () => spotifyCommand("previous")
-  );
+  // Les anciens boutons restent fonctionnels.
+  previousButton?.addEventListener("click", () => {
+    spotifyCommand("previous");
+  });
 
-  nextButton?.addEventListener(
-    "click",
-    () => spotifyCommand("next")
-  );
+  nextButton?.addEventListener("click", () => {
+    spotifyCommand("next");
+  });
 
-  playButton?.addEventListener(
-    "click",
-    spotifyTogglePlayback
-  );
+  playButton?.addEventListener("click", spotifyTogglePlayback);
 
-  // Retour de l'autorisation Spotify.
   const params = new URLSearchParams(window.location.search);
   const code = params.get("code");
   const state = params.get("state");
@@ -735,11 +788,6 @@ async function initializeSpotify() {
 
   if (error) {
     setStatus("Autorisation Spotify refusée.");
-    window.history.replaceState(
-      null,
-      document.title,
-      window.location.pathname
-    );
     return;
   }
 
@@ -754,6 +802,7 @@ async function initializeSpotify() {
     try {
       setStatus("Connexion Spotify en cours...");
       await exchangeCode(code);
+
     } catch (error) {
       setStatus(error.message);
       console.error(error);
@@ -765,30 +814,10 @@ async function initializeSpotify() {
   if (localStorage.getItem(TOKEN_KEY)) {
     setStatus("Spotify connecté · Synchronisation...");
     startPlayerUpdates();
+
   } else {
     setStatus("Spotify non connecté");
   }
 }
-
-// Barre de progression : permet de déplacer la lecture.
-document.addEventListener("input", event => {
-  if (event.target?.id === "jarvisSeek") {
-    isSeeking = true;
-
-    if (currentPlayer?.item?.duration_ms) {
-      const position =
-        Number(event.target.value) / 1000 *
-        currentPlayer.item.duration_ms;
-
-      $("jarvisElapsed").textContent = formatTime(position);
-    }
-  }
-});
-
-document.addEventListener("change", event => {
-  if (event.target?.id === "jarvisSeek") {
-    isSeeking = false;
-  }
-});
 
 initializeSpotify();
