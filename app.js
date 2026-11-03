@@ -5,9 +5,44 @@ const input = $("#userInput");
 const form = $("#chatForm");
 const API_URL = "https://jarvis-api.dylanroulliaux.workers.dev";
 
+const STORAGE_KEY = "jarvis_conversation_v1";
+const MAX_HISTORY = 20;
+
 let lastReply = "Je suis opérationnel, Monsieur. Comment puis-je vous assister ?";
 let history = [];
 let busy = false;
+
+// Charge les échanges enregistrés sur cet iPhone.
+try {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) {
+    const parsed = JSON.parse(saved);
+    if (Array.isArray(parsed)) {
+      history = parsed
+        .filter(m =>
+          m &&
+          ["user", "assistant"].includes(m.role) &&
+          typeof m.content === "string"
+        )
+        .slice(-MAX_HISTORY);
+    }
+  }
+} catch (error) {
+  console.warn("Impossible de charger la mémoire JARVIS :", error);
+  history = [];
+}
+
+// Enregistre les 20 derniers messages.
+function saveHistory() {
+  try {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(history.slice(-MAX_HISTORY))
+    );
+  } catch (error) {
+    console.warn("Impossible d'enregistrer la mémoire JARVIS :", error);
+  }
+}
 
 function addMessage(who, text) {
   const el = document.createElement("article");
@@ -27,6 +62,18 @@ function addMessage(who, text) {
   if (who === "jarvis") lastReply = text;
 }
 
+// Restaure les conversations précédentes.
+if (history.length) {
+  messages.replaceChildren();
+
+  history.forEach(message => {
+    addMessage(
+      message.role === "assistant" ? "jarvis" : "user",
+      message.content
+    );
+  });
+}
+
 async function askJarvis(text) {
   history.push({ role: "user", content: text });
 
@@ -35,18 +82,25 @@ async function askJarvis(text) {
     headers: {
       "Content-Type": "application/json"
     },
-    body: JSON.stringify({ messages: history })
+    body: JSON.stringify({
+      messages: history.slice(-MAX_HISTORY)
+    })
   });
 
   const data = await response.json();
 
   if (!response.ok) {
     history.pop();
-    throw new Error(data.details || data.error || "Erreur de connexion");
+    throw new Error(
+      data.details || data.error || "Erreur de connexion"
+    );
   }
 
   const reply = data.reply || "Je n'ai pas reçu de réponse.";
+
   history.push({ role: "assistant", content: reply });
+  history = history.slice(-MAX_HISTORY);
+  saveHistory();
 
   return reply;
 }
@@ -61,20 +115,38 @@ form.addEventListener("submit", async e => {
   input.value = "";
   busy = true;
 
-  if ($("#reactorLabel")) $("#reactorLabel").textContent = "ANALYSE";
-  if ($("#subtitle")) $("#subtitle").textContent = "Connexion à mon intelligence artificielle...";
+  if ($("#reactorLabel"))
+    $("#reactorLabel").textContent = "ANALYSE";
+
+  if ($("#subtitle"))
+    $("#subtitle").textContent =
+      "Connexion à mon intelligence artificielle...";
 
   try {
     const reply = await askJarvis(text);
     addMessage("jarvis", reply);
 
-    if ($("#reactorLabel")) $("#reactorLabel").textContent = "OPÉRATIONNEL";
-    if ($("#subtitle")) $("#subtitle").textContent = "Je suis à votre disposition, Monsieur.";
-  } catch (error) {
-    addMessage("jarvis", "Je rencontre un problème de connexion, Monsieur : " + error.message);
+    if ($("#reactorLabel"))
+      $("#reactorLabel").textContent = "OPÉRATIONNEL";
 
-    if ($("#reactorLabel")) $("#reactorLabel").textContent = "ALERTE";
-    if ($("#subtitle")) $("#subtitle").textContent = "Vérification de la connexion nécessaire.";
+    if ($("#subtitle"))
+      $("#subtitle").textContent =
+        "Je suis à votre disposition, Monsieur.";
+
+  } catch (error) {
+    addMessage(
+      "jarvis",
+      "Je rencontre un problème de connexion, Monsieur : " +
+      error.message
+    );
+
+    if ($("#reactorLabel"))
+      $("#reactorLabel").textContent = "ALERTE";
+
+    if ($("#subtitle"))
+      $("#subtitle").textContent =
+        "Vérification de la connexion nécessaire.";
+
   } finally {
     busy = false;
     input.focus();
@@ -89,7 +161,9 @@ $("#voiceButton").addEventListener("click", () => {
 
   speechSynthesis.cancel();
 
-  const utterance = new SpeechSynthesisUtterance(lastReply);
+  const utterance =
+    new SpeechSynthesisUtterance(lastReply);
+
   utterance.lang = "fr-FR";
   utterance.rate = 0.92;
   utterance.pitch = 0.85;
@@ -99,11 +173,25 @@ $("#voiceButton").addEventListener("click", () => {
 
 $("#clearButton").addEventListener("click", () => {
   history = [];
-  messages.replaceChildren();
-  addMessage("jarvis", "Conversation réinitialisée, Monsieur.");
 
-  if ($("#reactorLabel")) $("#reactorLabel").textContent = "OPÉRATIONNEL";
-  if ($("#subtitle")) $("#subtitle").textContent = "Tous les systèmes sont prêts.";
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch (error) {
+    console.warn("Impossible d'effacer la mémoire JARVIS :", error);
+  }
+
+  messages.replaceChildren();
+
+  addMessage(
+    "jarvis",
+    "Conversation réinitialisée, Monsieur."
+  );
+
+  if ($("#reactorLabel"))
+    $("#reactorLabel").textContent = "OPÉRATIONNEL";
+
+  if ($("#subtitle"))
+    $("#subtitle").textContent = "Tous les systèmes sont prêts.";
 });
 
 $("#modelSelect").addEventListener("change", e => {
@@ -115,7 +203,8 @@ $("#modelSelect").addEventListener("change", e => {
   };
 
   $("#subtitle").textContent =
-    labels[e.target.value] + " sélectionné. Le modèle Mammouth recommandé reste utilisé.";
+    labels[e.target.value] +
+    " sélectionné. Le modèle Mammouth recommandé reste utilisé.";
 });
 
 if ("serviceWorker" in navigator) {
