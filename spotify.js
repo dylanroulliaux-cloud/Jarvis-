@@ -765,7 +765,7 @@ function startPlayerUpdates() {
 
 async function initializeSpotify() {
   createPlayer();
-
+console.log("JARVIS PLAYER CRÉÉ");
   if (connectButton) {
     connectButton.addEventListener("click", connectSpotify);
   }
